@@ -21,6 +21,7 @@ import './oauth/facebook';
 import './oauth/google';
 import './oauth/proxy';
 import './oauth/twitter';
+import './oauth/custom';
 import './methods/addOAuthService';
 import './methods/addUsersToRoom';
 import './methods/addUserToRoom';

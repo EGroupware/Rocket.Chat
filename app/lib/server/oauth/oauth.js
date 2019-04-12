@@ -24,7 +24,14 @@ Accounts.registerLoginHandler(function(options) {
 		serviceName: String,
 	}));
 
-	const service = AccessTokenServices[options.serviceName];
+	// Check if service is configured and therefore a custom OAuth
+	const config = ServiceConfiguration.configurations.findOne({ service: options.serviceName });
+
+	let service = AccessTokenServices[options.serviceName];
+
+	if (!service && config) {
+		service = AccessTokenServices.custom;
+	}
 
 	// Skip everything if there's no service set by the oauth middleware
 	if (!service) {
@@ -32,11 +39,11 @@ Accounts.registerLoginHandler(function(options) {
 	}
 
 	// Make sure we're configured
-	if (!ServiceConfiguration.configurations.findOne({ service: service.serviceName })) {
+	if (!config) {
 		throw new ServiceConfiguration.ConfigError();
 	}
 
-	if (!_.contains(Accounts.oauth.serviceNames(), service.serviceName)) {
+	if (!_.contains(Accounts.oauth.serviceNames(), options.serviceName)) {
 		// serviceName was not found in the registered services list.
 		// This could happen because the service never registered itself or
 		// unregisterService was called on it.
@@ -44,14 +51,14 @@ Accounts.registerLoginHandler(function(options) {
 			type: 'oauth',
 			error: new Meteor.Error(
 				Accounts.LoginCancelledError.numericError,
-				`No registered oauth service found for: ${ service.serviceName }`
+				`No registered oauth service found for: ${ options.serviceName }`
 			),
 		};
 	}
 
 	const oauthResult = service.handleAccessTokenRequest(options);
 
-	return Accounts.updateOrCreateUserFromExternalService(service.serviceName, oauthResult.serviceData, oauthResult.options);
+	return Accounts.updateOrCreateUserFromExternalService(options.serviceName, oauthResult.serviceData, oauthResult.options);
 });
 
 
